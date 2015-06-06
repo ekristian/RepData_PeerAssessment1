@@ -4,15 +4,133 @@ output:
   html_document:
     keep_md: true
 ---
+__Project Overview__
 
+1. [Loading and preprocessing the data][]
+
+2. What is the mean total number of steps taken per day?
+
+3. Show the structure of the data.frame object using str()
+
+4. Perform some basic exploritory analysis
+
+5. Tidy-up the data if ncessary.
 
 ## Loading and preprocessing the data
+The activity.zip file was included in
+[Roger Peng's Peer Assessment1][1] GitHub repository.
 
 
+1. Unzip activity.zip  
+1. Load the data into an R data.frame using read.csv  
+1. Use colClasses to set fields to their appropriate data types.  
+1. Return the data.frame
+```{r loadData}
+loadData <- function() {
+    unzip("activity.zip")
+    retval <- read.csv("activity.csv", 
+                       colClasses=c("integer", "Date", "integer"),
+                       stringsAsFactors=FALSE)
+    return(retval)
+}
+activity <- loadData()
+```
+Basic structure for the __activity__ data.frame
+```{r}
+str(activity)
+```
+__Initial exploritory findings.__
+```{r summary}
+summary(activity)
+```
+* __steps__ shows us we have 2,300 observations with a missing value.  
+* __date__ shows us we have daily readings from October 1st through 
+November 30th, 2012.  
+* __interval__ ranges from 0 through 2355 which represents 5 minute intervals.  
+taken from midnight (interval=0) through 11:55pm (interval=2355).
+  
+####Perform exploriory analysis on the activity data.frame using dplyr
+<!--
+```{r dplyr, echo=FALSE, results="hide"}
+#load the dplyr package, but hide any messages that may result.
+library(dplyr)
+```
+-->
+1. Group the data by date  
+1. Derive some helpful variables  
+    1. __nobsPerDay__ : Total number of observations per day
+    1. __minStepsPerInterval__ : Min steps per interval per day.
+    1. __maxStepsPerInterval__ : Max steps per interval per day.
+    1. __missingStepsPerDay__ : A count of missing step values per day.
+    1. __totalStepsPerDay__ : A sum of all the intervals for the day.
+    1. __weekDay__ : Day of the week the steps were measured.
+```{r explore}
+activity %>% group_by(date) %>% 
+    summarize(nobsPerDay=n(), minStepsPerInterval=min(steps), 
+              maxStepsPerInterval=max(steps),
+              missingStepsPerDay=sum(is.na(steps)),
+              totalStepsPerDay=sum(steps)) %>%
+    mutate(weekDay=weekdays(date), 
+           validObs=!is.na(totalStepsPerDay)) -> analytic_activity
 
-## What is mean total number of steps taken per day?
+analytic_activity %>% select(-weekDay) %>% summary()
+```
+__nobsPerDay__ shows us that each day has exactly 288 observations.  This is
+determined by the 5 minute intervals that are taken each day.
+```{r}
+hoursPerDay <- 24
+minutesPerHour <- 60
+minutesPerInterval <- 5
+obsPerDay <- hoursPerDay * (minutesPerHour / minutesPerInterval)
+obsPerDay
+```
+__validObs__ has 8 FALSE values. These days must not have any recorded values.
+```{r}
+analytic_activity %>% filter(!validObs) %>% 
+    select(validObs, date, missingStepsPerDay, totalStepsPerDay)
+                                                   
+```
+__Keep only valid observations in data.frame for ease of use.__
+```{r removeNss}
+analytic_activity %>% 
+    filter(validObs) -> analytic_activity
+str(analytic_activity)
+```
 
+## What is mean total number of steps taken per day?  
 
+####1. Calculate the total number of steps taken per day.  
+    This was done during data exploration (totalStepsPerDay).  
+####2. Make a histogram of the total number of steps taken each day.
+
+Calculate the number of bins based on unique values for __totalStepsPerDay__.
+```{r}
+analytic_activity %>% group_by(totalStepsPerDay) %>% summarize(days=n()) -> bins
+nbins <- nrow(bins)
+nbins
+```
+Calculate mean total steps per day, then round to 3 digits for readability.
+```{r}
+meanStepsPerDay <- round(mean(analytic_activity$totalStepsPerDay), digits=3)
+```
+Calculate the median steps per day.
+```{r}
+medianStepsPerDay <- median(analytic_activity$totalStepsPerDay)
+```
+Make a histogram showing the Total Number of Steps taken each day  
+Add the mean and median lines  
+Add the legened with detailed values  
+```{r, results='hold'}
+hist(bins$totalStepsPerDay, breaks=nbins,
+     main="Total Steps Per Day",  
+     xlab="Total Steps Per Day",  
+     ylab="Number of Days")
+abline(v = meanStepsPerDay, col="red", lwd=2)
+abline(v = medianStepsPerDay, col="blue", lty="dotted", lwd=2)
+legend("topright", col-c("reb", "blue"), lty=c("solid","dotted"), 
+       legend=c(paste("mean:",meanStepsPerDay), 
+                paste("median:", medianStepsPerDay)))
+```
 
 ## What is the average daily activity pattern?
 
@@ -23,3 +141,7 @@ output:
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+
+
+[1]: http://github.com/rdpeng/RepData_PeerAssessment1
