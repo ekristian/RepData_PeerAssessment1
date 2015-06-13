@@ -81,8 +81,8 @@ determined by the 5 minute intervals that are taken each day.
 hoursPerDay <- 24
 minutesPerHour <- 60
 minutesPerInterval <- 5
-obsPerDay <- hoursPerDay * (minutesPerHour / minutesPerInterval)
-obsPerDay
+nobsPerDay <- hoursPerDay * (minutesPerHour / minutesPerInterval)
+nobsPerDay
 ```
 __validObs__ has 8 FALSE values. These days must not have any recorded values.
 ```{r}
@@ -122,8 +122,10 @@ Add the mean and median lines
 Add the legened with detailed values  
 ```{r, results='hold'}
 hist(bins$totalStepsPerDay, breaks=nbins,
+     plot=TRUE,
      main="Total Steps Per Day",  
      xlab="Total Steps Per Day",  
+     xlim=c(0, max(bins$totalStepsPerDay)),
      ylab="Number of Days")
 abline(v = meanStepsPerDay, col="red", lwd=2)
 abline(v = medianStepsPerDay, col="blue", lty="dotted", lwd=2)
@@ -133,8 +135,49 @@ legend("topright", col-c("reb", "blue"), lty=c("solid","dotted"),
 ```
 
 ## What is the average daily activity pattern?
+Group activity data by __interval__ then calculate average steps per interval
+```{r}
+activity %>% group_by(interval) %>% filter(!is.na(steps)) %>%
+    summarize(avgSteps = mean(steps)) -> interval
+```
 
-
+Create X axis tick labels
+```{r}
+# Create a interval formatting function to create pretty time-based labels
+intervalFormat <- function(x) {
+    sprintf("%02d:%02d", floor(x/100), floor(x %% 100))
+}
+# Start with 0, increment by 200 until 2200, then add max interval (2355)
+xbreaks <- c(seq(0, 2100, by=300), 2355)
+# format labels nicely
+xlabs <- sapply(xbreaks, intervalFormat)
+```
+Find then interval that averaged the maximum steps per daily.
+```{r}
+interval %>% filter(avgSteps == max(interval$avgSteps)) -> maxInterval
+maxInterval
+```
+```{r}
+maxAvgInterval <- intervalFormat(maxInterval$interval)
+```
+Create a line plot showing the average steps taken throught the day from 
+interval 0:00 (0) through interval (2355) 23:55
+<!--
+```{r, results='hide'}
+library(ggplot2)
+```
+-->
+```{r}
+ggplot(data=interval, aes(x=interval, y=avgSteps)) +
+    geom_line() +
+    scale_x_continuous(limits=c(0, 2355),
+                       breaks=xbreaks,
+                       labels=xlabs
+                       ) +
+    xlab("Tom of Day (24 hour clock)") +
+    ylab("Average Steps per 5 Min Interval per Day") +
+    geom_line(aes(x=maxInterval$interval, color=maxAvgInterval))
+```
 
 ## Imputing missing values
 
