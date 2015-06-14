@@ -4,13 +4,6 @@ output:
   html_document:
     keep_md: true
 ---
-__Project Overview__
-
-1. [Loading and preprocessing the data][]
-1. What is the mean total number of steps taken per day?
-1. Show the structure of the data.frame object using str()
-1. Perform some basic exploritory analysis
-1. Tidy-up the data if ncessary.
 
 ## Loading and preprocessing the data
 The activity.zip file was included in
